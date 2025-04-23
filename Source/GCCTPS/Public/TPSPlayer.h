@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "InputActionValue.h"
 #include "GameFramework/Character.h"
 #include "TPSPlayer.generated.h"
 
@@ -19,13 +20,32 @@ protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
-public:	
+
+public:
+
+	UPROPERTY(EditAnywhere, Category = Input)
+	class UInputMappingContext* IMC_TPSPlayer;
+
+	UPROPERTY(EditAnywhere, Category = Input)
+	class UInputAction* IA_TPSMove;
+
+	UPROPERTY(EditAnywhere, Category = Input)
+	class UInputAction* IA_TPSLook;
+
+	UPROPERTY(EditAnywhere, Category = Input)
+	class UInputAction* IA_TPSJump;
+
+	UPROPERTY(EditAnywhere, Category = Input)
+	class UInputAction* IA_TPSFire;
+	
+	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
+	virtual void NotifyControllerChanged() override;
 
 	// 1. Mesh의 내용을 채우고싶다.
 	// 2. SpringArmComp를 만들어서 Root에 붙이고 배치하고싶다.
@@ -40,11 +60,20 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	FVector Direction;
 
+	void OnActionMove(const FInputActionValue& value);
+	void OnActionLook(const FInputActionValue& value);
+	void OnActionJump(const FInputActionValue& value);
+	void OnActionFire(const FInputActionValue& value);
 
-	void OnAxisRight(float value);
-	void OnAxisForward(float value);
-
-	void OnAxisLookUp(float value);
-	void OnAxisTurn(float value);
+	// 총을 쏘고싶다.
+	// - 총구위치
+	UPROPERTY(EditAnywhere)
+	class USkeletalMeshComponent* GunComp;
+	// - 총알공장
+	UPROPERTY(EditAnywhere)
+	TSubclassOf<class ABullet> BulletFactory;
+	
 };
+
+
 

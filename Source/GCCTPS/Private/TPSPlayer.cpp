@@ -3,19 +3,24 @@
 
 #include "TPSPlayer.h"
 
+#include "Bullet.h"
 #include "../GCCTPS.h"
 #include "Camera/CameraComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/SpringArmComponent.h"
+#include "InputMappingContext.h"
+#include "EnhancedInputComponent.h"
+#include "EnhancedInputSubsystems.h"
 
 // Sets default values
 ATPSPlayer::ATPSPlayer()
 {
- 	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
+	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
 	// 1. Mesh의 내용을 채우고싶다.
-	ConstructorHelpers::FObjectFinder<USkeletalMesh> tempMesh(TEXT("/Script/Engine.SkeletalMesh'/Game/Characters/Mannequins/Meshes/SKM_Quinn.SKM_Quinn'"));
+	ConstructorHelpers::FObjectFinder<USkeletalMesh> tempMesh(
+		TEXT("/Script/Engine.SkeletalMesh'/Game/Characters/Mannequins/Meshes/SKM_Quinn.SKM_Quinn'"));
 
 	if (tempMesh.Succeeded())
 	{
@@ -37,13 +42,42 @@ ATPSPlayer::ATPSPlayer()
 	SpringArmComp->bUsePawnControlRotation = true;
 	GetCharacterMovement()->bOrientRotationToMovement = true;
 
+	ConstructorHelpers::FObjectFinder<UInputMappingContext> tempIMC(TEXT("/Script/EnhancedInput.InputMappingContext'/Game/TPS/Input/IMC_TPSPlayer.IMC_TPSPlayer'"));
+	if (tempIMC.Succeeded())
+	{
+		IMC_TPSPlayer =tempIMC.Object;
+	}
+
+	// 총 컴포넌트를 생성해서 몸에 붙이고싶다.
+	GunComp = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("GunComp"));
+	GunComp->SetupAttachment(GetMesh());
 }
 
 void ATPSPlayer::BeginPlay()
 {
 	Super::BeginPlay();
 
-	PRINT_LOG(TEXT("%s %d"), TEXT("Hello World!"), 20);
+	//PRINT_LOG(TEXT("%s %d"), TEXT("Hello World!"), 20);
+
+	// 최대 점프 카운트를 2로 하고싶다.
+	this->JumpMaxCount = 2;
+}
+
+void ATPSPlayer::NotifyControllerChanged()
+{
+	Super::NotifyControllerChanged();
+
+	// 현재 컨트롤러가 플레이컨트롤러가 맞다면
+	if (auto* pc = Cast<APlayerController>(Controller))
+	{
+		// UEnhancedInputLocalPlayerSubsystem를 가져와서
+		auto* subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(
+			pc->GetLocalPlayer());
+		
+		// AddMappingContext를 하고싶다.
+		subsystem->RemoveMappingContext(IMC_TPSPlayer);
+		subsystem->AddMappingContext(IMC_TPSPlayer, 0);
+	}
 }
 
 // Called every frame
@@ -65,36 +99,37 @@ void ATPSPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 
-	PlayerInputComponent->BindAxis(TEXT("Move Forward / Backward"), this, &ATPSPlayer::OnAxisForward);
-
-	PlayerInputComponent->BindAxis(TEXT("Move Right / Left"), this, &ATPSPlayer::OnAxisRight);
-
-	PlayerInputComponent->BindAxis(TEXT("Look Up / Down Mouse"), this, &ATPSPlayer::OnAxisLookUp);
-
-	PlayerInputComponent->BindAxis(TEXT("Turn Right / Left Mouse"), this, &ATPSPlayer::OnAxisTurn);
-
-	
+	if (auto* input = Cast<UEnhancedInputComponent>(PlayerInputComponent))
+	{
+		input->BindAction(IA_TPSMove, ETriggerEvent::Triggered, this, &ATPSPlayer::OnActionMove);
+		input->BindAction(IA_TPSLook, ETriggerEvent::Triggered, this, &ATPSPlayer::OnActionLook);
+		input->BindAction(IA_TPSJump, ETriggerEvent::Started, this, &ATPSPlayer::OnActionJump);
+		input->BindAction(IA_TPSFire, ETriggerEvent::Started, this, &ATPSPlayer::OnActionFire);
+	}
 }
 
-
-void ATPSPlayer::OnAxisRight(float value)
+void ATPSPlayer::OnActionMove(const FInputActionValue& value)
 {
-	Direction.Y = value;
+	FVector2D v = value.Get<FVector2D>();
+	Direction.X = v.X;
+	Direction.Y = v.Y;
 }
 
-void ATPSPlayer::OnAxisForward(float value)
+void ATPSPlayer::OnActionLook(const FInputActionValue& value)
 {
-	Direction.X = value;
+	FVector2D v = value.Get<FVector2D>();
+	AddControllerPitchInput(v.Y);
+	AddControllerYawInput(v.X);
 }
 
-void ATPSPlayer::OnAxisLookUp(float value)
+void ATPSPlayer::OnActionJump(const FInputActionValue& value)
 {
-	AddControllerPitchInput(value);
+	Jump();
 }
 
-void ATPSPlayer::OnAxisTurn(float value)
+void ATPSPlayer::OnActionFire(const FInputActionValue& value)
 {
-	AddControllerYawInput(value);
+	// 총쏘기
+	FTransform t = GunComp->GetSocketTransform(TEXT("FirePoint"));
+	GetWorld()->SpawnActor<ABullet>(BulletFactory, t);
 }
-
-
