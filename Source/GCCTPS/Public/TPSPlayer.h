@@ -23,20 +23,6 @@ protected:
 
 public:
 
-	UPROPERTY(EditAnywhere, Category = Input)
-	class UInputMappingContext* IMC_TPSPlayer;
-
-	UPROPERTY(EditAnywhere, Category = Input)
-	class UInputAction* IA_TPSMove;
-
-	UPROPERTY(EditAnywhere, Category = Input)
-	class UInputAction* IA_TPSLook;
-
-	UPROPERTY(EditAnywhere, Category = Input)
-	class UInputAction* IA_TPSJump;
-
-	UPROPERTY(EditAnywhere, Category = Input)
-	class UInputAction* IA_TPSFire;
 	
 	
 	// Called every frame
@@ -54,16 +40,45 @@ public:
 	UPROPERTY(EditAnywhere)
 	class USpringArmComponent* SpringArmComp;
 
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	class UCameraComponent* CameraComp;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	FVector Direction;
 
+	UPROPERTY(EditAnywhere, Category = Input)
+	class UInputMappingContext* IMC_TPSPlayer;
+
+	UPROPERTY(EditAnywhere, Category = Input)
+	class UInputAction* IA_TPSMove;
+
+	UPROPERTY(EditAnywhere, Category = Input)
+	class UInputAction* IA_TPSLook;
+
+	UPROPERTY(EditAnywhere, Category = Input)
+	class UInputAction* IA_TPSJump;
+
+	UPROPERTY(EditAnywhere, Category = Input)
+	class UInputAction* IA_TPSFire;
+
+	UPROPERTY(EditAnywhere, Category = Input)
+	class UInputAction* IA_ChooseGun;
+
+	UPROPERTY(EditAnywhere, Category = Input)
+	class UInputAction* IA_ChooseSniper;
+
+	UPROPERTY(EditAnywhere, Category = Input)
+	class UInputAction* IA_Zoom;
+	
 	void OnActionMove(const FInputActionValue& value);
 	void OnActionLook(const FInputActionValue& value);
 	void OnActionJump(const FInputActionValue& value);
 	void OnActionFire(const FInputActionValue& value);
+	void OnActionChooseGun(const FInputActionValue& value);
+	void OnActionChooseSniper(const FInputActionValue& value);
+
+	void OnActionZoomIn(const FInputActionValue& value);
+	void OnActionZoomOut(const FInputActionValue& value);
 
 	// 총을 쏘고싶다.
 	// - 총구위치
@@ -72,7 +87,34 @@ public:
 	// - 총알공장
 	UPROPERTY(EditAnywhere)
 	TSubclassOf<class ABullet> BulletFactory;
-	
+
+	UPROPERTY(EditAnywhere)
+	class UStaticMeshComponent* SniperComp;
+
+	bool bChoosGun = false;
+
+	// 태어날 때 CrosshairUI, SniperUI를 생성하고 Viewport에 붙이고 보이지 않게 하고싶다.
+	// 1번을 누르면 UI가 다 안보여야한다.
+	// 2번을 누르면 Crosshair만 보여야한다
+	//   이 상태에서 ZoomIn 하면 Sniper가 보여야 한다.
+	//   ZoomOut을 하면 Crosshair만 보여야한다
+	UPROPERTY(EditAnywhere)
+	TSubclassOf<class UUserWidget> CrosshairUIFactory;
+
+	UPROPERTY()
+	UUserWidget* CrosshairUi;
+
+	UPROPERTY(EditAnywhere)
+	TSubclassOf<class UUserWidget> SniperUIFactory;
+
+	UPROPERTY()
+	UUserWidget* SniperUi;
+
+	float TargetFOV = 90.f;
+
+	float ZoomSpeed;
+
+	// FTimerHandle handle;
 };
 
 

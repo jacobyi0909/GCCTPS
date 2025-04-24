@@ -32,4 +32,18 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TObjectPtr<class UProjectileMovementComponent> MovementComp;
+
+	// 태어날 때 타이머를 이용해서 10초 후에 파괴되게 하고싶다.
+	float MyLifeSpan = 1.f;
+
+	FORCEINLINE void MyDestroy()
+	{
+		this->Destroy();
+	}
+
+	UPROPERTY(EditAnywhere)
+	float BulletSpeed = 2000.f;
+
+	virtual void PostEditChangeProperty(struct FPropertyChangedEvent& PropertyChangedEvent) override;
 };
+

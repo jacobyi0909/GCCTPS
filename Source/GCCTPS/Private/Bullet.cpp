@@ -33,17 +33,48 @@ ABullet::ABullet()
 	// 실제로 이동할 컴포넌트를 지정하고싶다.
 	MovementComp->SetUpdatedComponent(RootComponent);
 
-	InitialLifeSpan = 10.f;
+	//InitialLifeSpan = 10.f;
 }
 
 // Called when the game starts or when spawned
 void ABullet::BeginPlay()
 {
 	Super::BeginPlay();
+	// 타이머를 이용해서 10초 후에 파괴되게 하고싶다.
+	FTimerHandle handle;
+	GetWorld()->GetTimerManager().SetTimer(handle,
+		[&]()
+		{
+			this->Destroy();
+		},
+		MyLifeSpan, false);
+	
+	//GetWorld()->GetTimerManager().SetTimer(handle, this, &ABullet::MyDestroy, MyLifeSpan, false);
+	// Lambda 식, 익명함수(Anonymous function)
+	// auto Add = [&](int a, int b)->int
+	// {
+	// 	return a + b;
+	// };
+	//
+	// int result = Add(100, 200);
 }
 
 // Called every frame
 void ABullet::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+}
+
+
+void ABullet::PostEditChangeProperty(struct FPropertyChangedEvent& PropertyChangedEvent)
+{
+	Super::PostEditChangeProperty(PropertyChangedEvent);
+	// 여러가지 프로퍼티 중에 어떤 프로퍼티의 값이 변경되었다면 감지할 수 있다.
+	// 만약 BulletSpeed의 값이 바뀌었다면
+	if (PropertyChangedEvent.GetPropertyName() == TEXT("BulletSpeed"))
+	{
+		// MovementComp의 Speed를 BulletSpeed값으로 대입하고싶다.
+		MovementComp->InitialSpeed = BulletSpeed;
+		MovementComp->MaxSpeed = BulletSpeed;
+	}
 }

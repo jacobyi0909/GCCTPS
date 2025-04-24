@@ -11,6 +11,7 @@
 #include "InputMappingContext.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
+#include "Blueprint/UserWidget.h"
 
 // Sets default values
 ATPSPlayer::ATPSPlayer()
@@ -49,8 +50,26 @@ ATPSPlayer::ATPSPlayer()
 	}
 
 	// 총 컴포넌트를 생성해서 몸에 붙이고싶다.
+	// 총의 Mesh를 로딩해서 적용하고싶다.
 	GunComp = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("GunComp"));
 	GunComp->SetupAttachment(GetMesh());
+	GunComp->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+	ConstructorHelpers::FObjectFinder<USkeletalMesh> tempGun(TEXT("/Script/Engine.SkeletalMesh'/Game/TPS/Models/FPWeapon/Mesh/SK_FPGun.SK_FPGun'"));
+	if (tempGun.Succeeded())
+	{
+		GunComp->SetSkeletalMesh(tempGun.Object);
+	}
+
+	SniperComp= CreateDefaultSubobject<UStaticMeshComponent>(TEXT("SniperComp"));
+	SniperComp->SetupAttachment(GetMesh());
+	SniperComp->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+	ConstructorHelpers::FObjectFinder<UStaticMesh> tempSniper(TEXT("/Script/Engine.StaticMesh'/Game/TPS/Models/SniperGun/sniper11.sniper11'"));
+	if (tempGun.Succeeded())
+	{
+		SniperComp->SetStaticMesh(tempSniper.Object);
+	}
 }
 
 void ATPSPlayer::BeginPlay()
@@ -59,8 +78,21 @@ void ATPSPlayer::BeginPlay()
 
 	//PRINT_LOG(TEXT("%s %d"), TEXT("Hello World!"), 20);
 
+	// 태어날 때 CrosshairUI, SniperUI를 생성하고 Viewport에 붙이고 보이지 않게 하고싶다.
+
+	CrosshairUi = CreateWidget(GetWorld(), CrosshairUIFactory);
+	CrosshairUi->AddToViewport();
+	
+	SniperUi = CreateWidget(GetWorld(), SniperUIFactory);
+	SniperUi->AddToViewport();
+
+	CrosshairUi->SetVisibility(ESlateVisibility::Hidden);
+	SniperUi->SetVisibility(ESlateVisibility::Hidden);
+	
+	
 	// 최대 점프 카운트를 2로 하고싶다.
 	this->JumpMaxCount = 2;
+	OnActionChooseSniper(FInputActionValue());	// 
 }
 
 void ATPSPlayer::NotifyControllerChanged()
@@ -92,6 +124,14 @@ void ATPSPlayer::Tick(float DeltaTime)
 	AddMovementInput(Direction);
 
 	Direction = FVector::ZeroVector;
+
+	// A = Lerp(A, B, t)
+	CameraComp->FieldOfView = FMath::Lerp(
+		CameraComp->FieldOfView,
+		TargetFOV,
+		ZoomSpeed
+	);
+	
 }
 
 // Called to bind functionality to input
@@ -105,6 +145,10 @@ void ATPSPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent
 		input->BindAction(IA_TPSLook, ETriggerEvent::Triggered, this, &ATPSPlayer::OnActionLook);
 		input->BindAction(IA_TPSJump, ETriggerEvent::Started, this, &ATPSPlayer::OnActionJump);
 		input->BindAction(IA_TPSFire, ETriggerEvent::Started, this, &ATPSPlayer::OnActionFire);
+		input->BindAction(IA_ChooseGun, ETriggerEvent::Started, this, &ATPSPlayer::OnActionChooseGun);
+		input->BindAction(IA_ChooseSniper, ETriggerEvent::Started, this, &ATPSPlayer::OnActionChooseSniper);
+		input->BindAction(IA_Zoom, ETriggerEvent::Started, this, &ATPSPlayer::OnActionZoomIn);
+		input->BindAction(IA_Zoom, ETriggerEvent::Completed, this, &ATPSPlayer::OnActionZoomOut);
 	}
 }
 
@@ -130,6 +174,71 @@ void ATPSPlayer::OnActionJump(const FInputActionValue& value)
 void ATPSPlayer::OnActionFire(const FInputActionValue& value)
 {
 	// 총쏘기
-	FTransform t = GunComp->GetSocketTransform(TEXT("FirePoint"));
-	GetWorld()->SpawnActor<ABullet>(BulletFactory, t);
+	if (bChoosGun)
+	{
+		FTransform t = GunComp->GetSocketTransform(TEXT("FirePoint"));
+		GetWorld()->SpawnActor<ABullet>(BulletFactory, t);
+	}
+	else
+	{
+		
+	}
+}
+
+// 태어날 때 Sniper가 보이게 하고싶다.
+// gun을 선택했을 때만 bullet이 발사되게 하고싶다.
+void ATPSPlayer::OnActionChooseGun(const FInputActionValue& value)
+{
+	// gun만 보이게 하고싶다.
+	GunComp->SetVisibility(true);
+	SniperComp->SetVisibility(false);
+	bChoosGun = true;
+
+	CrosshairUi->SetVisibility(ESlateVisibility::Hidden);
+	SniperUi->SetVisibility(ESlateVisibility::Hidden);
+}
+
+void ATPSPlayer::OnActionChooseSniper(const FInputActionValue& value)
+{
+	// sniper만 보이게 하고싶다.
+	GunComp->SetVisibility(false);
+	SniperComp->SetVisibility(true);
+	bChoosGun = false;
+
+	CrosshairUi->SetVisibility(ESlateVisibility::Visible);
+	SniperUi->SetVisibility(ESlateVisibility::Hidden);
+}
+
+// 타이머를 이용해서 FOV가 변경될때 부드럽게 처리되도록 하고싶다.
+
+void ATPSPlayer::OnActionZoomIn(const FInputActionValue& value)
+{
+	TargetFOV = 30.f;
+	ZoomSpeed = GetWorld()->GetDeltaSeconds() * 30.f;
+	// GetWorld()->GetTimerManager().ClearTimer(handle);
+	// GetWorld()->GetTimerManager().SetTimer(handle, [&]()
+	// {
+	// 	CameraComp->SetFieldOfView(CameraComp->FieldOfView - 90 * GetWorld()->GetDeltaSeconds());
+	// 	if (CameraComp->FieldOfView <= 30)
+	// 	{
+	// 		CameraComp->SetFieldOfView(30);
+	// 		GetWorld()->GetTimerManager().ClearTimer(handle);
+	// 	}
+	// }, GetWorld()->GetDeltaSeconds(), true);
+}
+
+void ATPSPlayer::OnActionZoomOut(const FInputActionValue& value)
+{
+	TargetFOV = 90.f;
+	ZoomSpeed = GetWorld()->GetDeltaSeconds() * 6.f;
+	// GetWorld()->GetTimerManager().ClearTimer(handle);
+	// GetWorld()->GetTimerManager().SetTimer(handle, [&]()
+	// {
+	// 	CameraComp->SetFieldOfView(CameraComp->FieldOfView + 90 * GetWorld()->GetDeltaSeconds());
+	// 	if (CameraComp->FieldOfView >= 90)
+	// 	{
+	// 		CameraComp->SetFieldOfView(90);
+	// 		GetWorld()->GetTimerManager().ClearTimer(handle);
+	// 	}
+	// }, GetWorld()->GetDeltaSeconds(), true);
 }
