@@ -183,6 +183,36 @@ void ATPSPlayer::OnActionFire(const FInputActionValue& value)
 	}
 	else
 	{
+		// struct FHitResult& OutHit,
+		// const FVector& Start,
+		// const FVector& End,
+		// ECollisionChannel TraceChannel,
+		// const FCollisionQueryParams& Params = FCollisionQueryParams::DefaultQueryParam,
+
+		FHitResult OutHit;
+		FVector Start = CameraComp->GetComponentLocation();
+		FVector End = Start + CameraComp->GetForwardVector() * 100000;
+		FCollisionQueryParams Params;
+		Params.AddIgnoredActor(this);
+
+		// 카메라 위치에서 카메라 앞 방향으로 LineTrace하고싶다.
+		bool bHit = GetWorld()->LineTraceSingleByChannel(OutHit, Start, End, ECC_Visibility, Params);
+
+		// 만약 부딪혔다면
+		if (bHit)
+		{
+			// 만약 부딪힌 물체가 물리가 켜져있다면
+			auto* hitComp = OutHit.GetComponent();
+			if (hitComp->IsSimulatingPhysics())
+			{
+				// 그 물체에게 힘을 가하고싶다.
+				FVector traceDir = End - Start;
+				FVector impulse = -OutHit.ImpactNormal + traceDir.GetSafeNormal();
+				impulse.Normalize();
+				impulse = impulse * hitComp->GetMass() * 1000.f;
+				hitComp->AddImpulse(impulse);
+			}
+		}
 	}
 }
 
