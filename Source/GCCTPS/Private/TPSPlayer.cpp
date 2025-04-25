@@ -43,10 +43,11 @@ ATPSPlayer::ATPSPlayer()
 	SpringArmComp->bUsePawnControlRotation = true;
 	GetCharacterMovement()->bOrientRotationToMovement = true;
 
-	ConstructorHelpers::FObjectFinder<UInputMappingContext> tempIMC(TEXT("/Script/EnhancedInput.InputMappingContext'/Game/TPS/Input/IMC_TPSPlayer.IMC_TPSPlayer'"));
+	ConstructorHelpers::FObjectFinder<UInputMappingContext> tempIMC(
+		TEXT("/Script/EnhancedInput.InputMappingContext'/Game/TPS/Input/IMC_TPSPlayer.IMC_TPSPlayer'"));
 	if (tempIMC.Succeeded())
 	{
-		IMC_TPSPlayer =tempIMC.Object;
+		IMC_TPSPlayer = tempIMC.Object;
 	}
 
 	// 총 컴포넌트를 생성해서 몸에 붙이고싶다.
@@ -55,17 +56,19 @@ ATPSPlayer::ATPSPlayer()
 	GunComp->SetupAttachment(GetMesh());
 	GunComp->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
-	ConstructorHelpers::FObjectFinder<USkeletalMesh> tempGun(TEXT("/Script/Engine.SkeletalMesh'/Game/TPS/Models/FPWeapon/Mesh/SK_FPGun.SK_FPGun'"));
+	ConstructorHelpers::FObjectFinder<USkeletalMesh> tempGun(
+		TEXT("/Script/Engine.SkeletalMesh'/Game/TPS/Models/FPWeapon/Mesh/SK_FPGun.SK_FPGun'"));
 	if (tempGun.Succeeded())
 	{
 		GunComp->SetSkeletalMesh(tempGun.Object);
 	}
 
-	SniperComp= CreateDefaultSubobject<UStaticMeshComponent>(TEXT("SniperComp"));
+	SniperComp = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("SniperComp"));
 	SniperComp->SetupAttachment(GetMesh());
 	SniperComp->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
-	ConstructorHelpers::FObjectFinder<UStaticMesh> tempSniper(TEXT("/Script/Engine.StaticMesh'/Game/TPS/Models/SniperGun/sniper11.sniper11'"));
+	ConstructorHelpers::FObjectFinder<UStaticMesh> tempSniper(
+		TEXT("/Script/Engine.StaticMesh'/Game/TPS/Models/SniperGun/sniper11.sniper11'"));
 	if (tempGun.Succeeded())
 	{
 		SniperComp->SetStaticMesh(tempSniper.Object);
@@ -82,17 +85,17 @@ void ATPSPlayer::BeginPlay()
 
 	CrosshairUi = CreateWidget(GetWorld(), CrosshairUIFactory);
 	CrosshairUi->AddToViewport();
-	
+
 	SniperUi = CreateWidget(GetWorld(), SniperUIFactory);
 	SniperUi->AddToViewport();
 
 	CrosshairUi->SetVisibility(ESlateVisibility::Hidden);
 	SniperUi->SetVisibility(ESlateVisibility::Hidden);
-	
-	
+
+
 	// 최대 점프 카운트를 2로 하고싶다.
 	this->JumpMaxCount = 2;
-	OnActionChooseSniper(FInputActionValue());	// 
+	OnActionChooseSniper(FInputActionValue()); // 
 }
 
 void ATPSPlayer::NotifyControllerChanged()
@@ -105,7 +108,7 @@ void ATPSPlayer::NotifyControllerChanged()
 		// UEnhancedInputLocalPlayerSubsystem를 가져와서
 		auto* subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(
 			pc->GetLocalPlayer());
-		
+
 		// AddMappingContext를 하고싶다.
 		subsystem->RemoveMappingContext(IMC_TPSPlayer);
 		subsystem->AddMappingContext(IMC_TPSPlayer, 0);
@@ -131,7 +134,6 @@ void ATPSPlayer::Tick(float DeltaTime)
 		TargetFOV,
 		ZoomSpeed
 	);
-	
 }
 
 // Called to bind functionality to input
@@ -181,7 +183,6 @@ void ATPSPlayer::OnActionFire(const FInputActionValue& value)
 	}
 	else
 	{
-		
 	}
 }
 
@@ -196,10 +197,17 @@ void ATPSPlayer::OnActionChooseGun(const FInputActionValue& value)
 
 	CrosshairUi->SetVisibility(ESlateVisibility::Hidden);
 	SniperUi->SetVisibility(ESlateVisibility::Hidden);
+
+	// ZoomOut을 하고 싶다.
+	OnActionZoomOut(FInputActionValue());
 }
 
 void ATPSPlayer::OnActionChooseSniper(const FInputActionValue& value)
 {
+	// 만약 이미 sniper라면 함수를 바로 종료하고싶다.
+	if (false == bChoosGun)
+		return;
+
 	// sniper만 보이게 하고싶다.
 	GunComp->SetVisibility(false);
 	SniperComp->SetVisibility(true);
@@ -213,32 +221,23 @@ void ATPSPlayer::OnActionChooseSniper(const FInputActionValue& value)
 
 void ATPSPlayer::OnActionZoomIn(const FInputActionValue& value)
 {
-	TargetFOV = 30.f;
-	ZoomSpeed = GetWorld()->GetDeltaSeconds() * 30.f;
-	// GetWorld()->GetTimerManager().ClearTimer(handle);
-	// GetWorld()->GetTimerManager().SetTimer(handle, [&]()
-	// {
-	// 	CameraComp->SetFieldOfView(CameraComp->FieldOfView - 90 * GetWorld()->GetDeltaSeconds());
-	// 	if (CameraComp->FieldOfView <= 30)
-	// 	{
-	// 		CameraComp->SetFieldOfView(30);
-	// 		GetWorld()->GetTimerManager().ClearTimer(handle);
-	// 	}
-	// }, GetWorld()->GetDeltaSeconds(), true);
+	// 만약 내가 스나를 들었을 때만 ZoomIn기능을 활성화 하고싶다.
+	if (false == bChoosGun)
+	{
+		TargetFOV = 30.f;
+		ZoomSpeed = GetWorld()->GetDeltaSeconds() * 30.f;
+		CrosshairUi->SetVisibility(ESlateVisibility::Hidden);
+		SniperUi->SetVisibility(ESlateVisibility::Visible);
+	}
 }
 
 void ATPSPlayer::OnActionZoomOut(const FInputActionValue& value)
 {
 	TargetFOV = 90.f;
 	ZoomSpeed = GetWorld()->GetDeltaSeconds() * 6.f;
-	// GetWorld()->GetTimerManager().ClearTimer(handle);
-	// GetWorld()->GetTimerManager().SetTimer(handle, [&]()
-	// {
-	// 	CameraComp->SetFieldOfView(CameraComp->FieldOfView + 90 * GetWorld()->GetDeltaSeconds());
-	// 	if (CameraComp->FieldOfView >= 90)
-	// 	{
-	// 		CameraComp->SetFieldOfView(90);
-	// 		GetWorld()->GetTimerManager().ClearTimer(handle);
-	// 	}
-	// }, GetWorld()->GetDeltaSeconds(), true);
+	if (false == bChoosGun)
+	{
+		CrosshairUi->SetVisibility(ESlateVisibility::Visible);
+		SniperUi->SetVisibility(ESlateVisibility::Hidden);
+	}
 }
