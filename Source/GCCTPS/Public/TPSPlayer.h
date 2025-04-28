@@ -114,6 +114,10 @@ public:
 
 	float ZoomSpeed;
 
+	// 스나이퍼총으로 맞은 위치에 BulletImpact VFX를 표현하고싶다.
+	UPROPERTY(EditAnywhere)
+	class UParticleSystem* BulletImpactVFX;
+
 	// FTimerHandle handle;
 };
 

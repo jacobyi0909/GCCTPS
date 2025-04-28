@@ -5,6 +5,7 @@
 
 #include "Enemy.h"
 #include "TPSPlayer.h"
+#include "Components/CapsuleComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GCCTPS/GCCTPS.h"
 
@@ -26,7 +27,6 @@ void UEnemyFSM::BeginPlay()
 	Me = Cast<AEnemy>(GetOwner());
 
 	Me->GetCharacterMovement()->bOrientRotationToMovement = true;
-	
 }
 
 // Called every frame
@@ -45,10 +45,16 @@ void UEnemyFSM::TickComponent(float DeltaTime, ELevelTick TickType, FActorCompon
 	case EEnemyState::Attack:
 		TickAttack();
 		break;
+	case EEnemyState::Damage:
+		TickDamage();
+		break;
+	case EEnemyState::Die:
+		TickDie();
+		break;
 	}
 
 	FString log = UEnum::GetValueAsString(State);
-	PRINT_LOG(TEXT("%s"), *log);
+	//PRINT_LOG(TEXT("%s"), *log);
 	DrawDebugString(GetWorld(), Me->GetActorLocation(), log, nullptr, FColor::Yellow, 0, true, 1);
 }
 
@@ -61,7 +67,7 @@ void UEnemyFSM::TickIdle()
 	if (Player)
 	{
 		//  이동상태로 전이하고싶다.
-		State = EEnemyState::Move;
+		SetState(EEnemyState::Move);
 	}
 }
 
@@ -71,9 +77,85 @@ void UEnemyFSM::TickMove()
 	FVector destination = Player->GetActorLocation();
 	FVector dir = destination - Me->GetActorLocation();
 	Me->AddMovementInput(dir.GetSafeNormal2D());
+
+	// 만약 공격 가능한 거리라면
+	//float dist = FVector::Dist(Player->GetActorLocation(), Me->GetActorLocation());
+	float dist = dir.Length();
+	if (dist < AttackRange)
+	{
+		// 공격상태로 전이하고싶다.
+		SetState(EEnemyState::Attack);
+	}
 }
 
 void UEnemyFSM::TickAttack()
 {
+	// 시간이 흐르다가
+	CurrentTime += GetWorld()->GetDeltaSeconds();
+	// 만약 현재시간이 공격 대기시간을 초과하면
+	if (CurrentTime > AttackDelayTime)
+	{
+		CurrentTime = 0;
+		FVector dir = Player->GetActorLocation() - Me->GetActorLocation();
+		//	만약 상대가 공격 가능하다면
+		if (dir.Length() < AttackRange)
+		{
+			//		로그출력 PRINT_LOG(TEXT("Attack!!!"));
+			PRINT_LOG(TEXT("Attack!!!"));
+		}
+		//  그렇지 않다면
+		else
+		{
+			//		이동상태로 전이하고싶다.
+			SetState(EEnemyState::Move);
+		}
+	}
 }
 
+void UEnemyFSM::TickDamage()
+{
+	// 1초동안 멈췄다가 이동상태로 전이하고싶다.
+	CurrentTime += GetWorld()->GetDeltaSeconds();
+	if (CurrentTime > 1)
+	{
+		SetState(EEnemyState::Move);
+	}
+}
+
+void UEnemyFSM::TickDie()
+{
+	// 1초동안 아래로 이동하고싶다.  
+	CurrentTime += GetWorld()->GetDeltaSeconds();
+	FVector dir(0,0,-1);
+	FVector newLoc = Me->GetActorLocation() + dir * DieDownSpeed * GetWorld()->GetDeltaSeconds();
+	Me->SetActorLocation(newLoc);
+	if (CurrentTime > 1)
+	{
+		// 1초가 지난 후 파괴되고싶다.
+		Me->Destroy();
+	}
+}
+
+void UEnemyFSM::OnMyTakeDamage(int32 damage)
+{
+	PRINT_LOG(TEXT("OnMyTakeDamage"));
+	// 체력을 damage만큼 감소시키고싶다.
+	CurHp = FMath::Max(0, CurHp - damage);
+	// 만약 체력이 0보다 크다면 Damage상태로 전이하고
+	if (CurHp > 0)
+	{
+		SetState(EEnemyState::Damage);
+	}
+	// 그렇지 않다면 죽음상태로 전이하고싶다.
+	else
+	{
+		SetState(EEnemyState::Die);
+		Me->GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	}
+}
+
+void UEnemyFSM::SetState(EEnemyState next)
+{
+	State = next;
+	CurrentTime = 0;
+}

@@ -4,6 +4,8 @@
 #include "TPSPlayer.h"
 
 #include "Bullet.h"
+#include "Enemy.h"
+#include "EnemyFSM.h"
 #include "../GCCTPS.h"
 #include "Camera/CameraComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -12,6 +14,7 @@
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "Blueprint/UserWidget.h"
+#include "Kismet/GameplayStatics.h"
 
 // Sets default values
 ATPSPlayer::ATPSPlayer()
@@ -89,13 +92,11 @@ void ATPSPlayer::BeginPlay()
 	SniperUi = CreateWidget(GetWorld(), SniperUIFactory);
 	SniperUi->AddToViewport();
 
-	CrosshairUi->SetVisibility(ESlateVisibility::Hidden);
-	SniperUi->SetVisibility(ESlateVisibility::Hidden);
-
-
 	// 최대 점프 카운트를 2로 하고싶다.
 	this->JumpMaxCount = 2;
-	OnActionChooseSniper(FInputActionValue()); // 
+
+	bChoosGun = true;
+	OnActionChooseSniper(FInputActionValue());
 }
 
 void ATPSPlayer::NotifyControllerChanged()
@@ -201,6 +202,18 @@ void ATPSPlayer::OnActionFire(const FInputActionValue& value)
 		// 만약 부딪혔다면
 		if (bHit)
 		{
+			check(BulletImpactVFX);
+			UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), BulletImpactVFX, OutHit.ImpactPoint);
+			
+			// 만약 부딪힌 물체가 적이라면
+			if (AEnemy* enemy = Cast<AEnemy>(OutHit.GetActor()))
+			{
+				// 적의 FSM의 OnMyTakeDamage를 호출하고싶다.
+				enemy->EnemyFSM->OnMyTakeDamage(1);
+			}
+			
+			
+			
 			// 만약 부딪힌 물체가 물리가 켜져있다면
 			auto* hitComp = OutHit.GetComponent();
 			if (hitComp->IsSimulatingPhysics())
