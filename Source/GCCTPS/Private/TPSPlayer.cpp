@@ -13,6 +13,7 @@
 #include "InputMappingContext.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
+#include "TPSPlayerAnim.h"
 #include "Blueprint/UserWidget.h"
 #include "Kismet/GameplayStatics.h"
 
@@ -56,7 +57,7 @@ ATPSPlayer::ATPSPlayer()
 	// 총 컴포넌트를 생성해서 몸에 붙이고싶다.
 	// 총의 Mesh를 로딩해서 적용하고싶다.
 	GunComp = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("GunComp"));
-	GunComp->SetupAttachment(GetMesh());
+	GunComp->SetupAttachment(GetMesh(), TEXT("hand_r"));
 	GunComp->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
 	ConstructorHelpers::FObjectFinder<USkeletalMesh> tempGun(
@@ -67,7 +68,7 @@ ATPSPlayer::ATPSPlayer()
 	}
 
 	SniperComp = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("SniperComp"));
-	SniperComp->SetupAttachment(GetMesh());
+	SniperComp->SetupAttachment(GetMesh(), TEXT("hand_r"));
 	SniperComp->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
 	ConstructorHelpers::FObjectFinder<UStaticMesh> tempSniper(
@@ -152,6 +153,9 @@ void ATPSPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent
 		input->BindAction(IA_ChooseSniper, ETriggerEvent::Started, this, &ATPSPlayer::OnActionChooseSniper);
 		input->BindAction(IA_Zoom, ETriggerEvent::Started, this, &ATPSPlayer::OnActionZoomIn);
 		input->BindAction(IA_Zoom, ETriggerEvent::Completed, this, &ATPSPlayer::OnActionZoomOut);
+
+		input->BindAction(IA_Run, ETriggerEvent::Started, this, &ATPSPlayer::OnActionRunStart);
+		input->BindAction(IA_Run, ETriggerEvent::Completed, this, &ATPSPlayer::OnActionRunEnd);
 	}
 }
 
@@ -176,6 +180,19 @@ void ATPSPlayer::OnActionJump(const FInputActionValue& value)
 
 void ATPSPlayer::OnActionFire(const FInputActionValue& value)
 {
+	// 총쏘기 애니메이션을 재생하고싶다.
+	if (auto* anim = Cast<UTPSPlayerAnim>(GetMesh()->GetAnimInstance()))
+	{
+		anim->Montage_Play(FireAnimMontage);
+	}
+
+	// 총쏘기 소리 재생하고싶다.
+	check(FireSound);
+	if (FireSound)
+	{
+		UGameplayStatics::PlaySound2D(GetWorld(), FireSound);
+	}
+	
 	// 총쏘기
 	if (bChoosGun)
 	{
@@ -284,3 +301,17 @@ void ATPSPlayer::OnActionZoomOut(const FInputActionValue& value)
 		SniperUi->SetVisibility(ESlateVisibility::Hidden);
 	}
 }
+
+
+void ATPSPlayer::OnActionRunStart(const FInputActionValue& value)
+{
+	GetCharacterMovement()->MaxWalkSpeed = 1000.f;
+	MoveState = EMoveState::Running;
+}
+
+void ATPSPlayer::OnActionRunEnd(const FInputActionValue& value)
+{
+	GetCharacterMovement()->MaxWalkSpeed = 600.f;
+	MoveState = EMoveState::Walking;
+}
+

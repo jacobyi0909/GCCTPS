@@ -5,7 +5,10 @@
 #include "CoreMinimal.h"
 #include "InputActionValue.h"
 #include "GameFramework/Character.h"
+#include "GCCTPS/GCCTPS.h"
 #include "TPSPlayer.generated.h"
+
+
 
 UCLASS()
 class GCCTPS_API ATPSPlayer : public ACharacter
@@ -69,6 +72,9 @@ public:
 
 	UPROPERTY(EditAnywhere, Category = Input)
 	class UInputAction* IA_Zoom;
+
+	UPROPERTY(EditAnywhere, Category = Input)
+	class UInputAction* IA_Run;
 	
 	void OnActionMove(const FInputActionValue& value);
 	void OnActionLook(const FInputActionValue& value);
@@ -80,6 +86,10 @@ public:
 	void OnActionZoomIn(const FInputActionValue& value);
 	void OnActionZoomOut(const FInputActionValue& value);
 
+	void OnActionRunStart(const FInputActionValue& value);
+	void OnActionRunEnd(const FInputActionValue& value);
+
+	
 	// 총을 쏘고싶다.
 	// - 총구위치
 	UPROPERTY(EditAnywhere)
@@ -119,6 +129,21 @@ public:
 	class UParticleSystem* BulletImpactVFX;
 
 	// FTimerHandle handle;
+
+	// 총쏘기 애니메이션을 재생하고싶다.
+	UPROPERTY(EditAnywhere)
+	class UAnimMontage* FireAnimMontage;
+
+	// 소리재생
+	UPROPERTY(EditAnywhere)
+	class USoundWave* FireSound;
+
+	
+	// 화면 흔들기
+
+
+
+	EMoveState MoveState = EMoveState::Walking;
 };
 
 
