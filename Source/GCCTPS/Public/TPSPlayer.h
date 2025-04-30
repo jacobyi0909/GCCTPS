@@ -76,6 +76,9 @@ public:
 	UPROPERTY(EditAnywhere, Category = Input)
 	class UInputAction* IA_Run;
 	
+	UPROPERTY(EditAnywhere, Category = Input)
+	class UInputAction* IA_Crouch;
+
 	void OnActionMove(const FInputActionValue& value);
 	void OnActionLook(const FInputActionValue& value);
 	void OnActionJump(const FInputActionValue& value);
@@ -89,6 +92,7 @@ public:
 	void OnActionRunStart(const FInputActionValue& value);
 	void OnActionRunEnd(const FInputActionValue& value);
 
+	void OnActionCrouch(const FInputActionValue& value);
 	
 	// 총을 쏘고싶다.
 	// - 총구위치
@@ -140,8 +144,8 @@ public:
 
 	
 	// 화면 흔들기
-
-
+	UPROPERTY(EditAnywhere)
+	TSubclassOf<class UCameraShakeBase> FireCameraShake;
 
 	EMoveState MoveState = EMoveState::Walking;
 };

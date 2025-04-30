@@ -77,6 +77,8 @@ ATPSPlayer::ATPSPlayer()
 	{
 		SniperComp->SetStaticMesh(tempSniper.Object);
 	}
+
+	//GetCharacterMovement()->GetNavAgentPropertiesRef().bCanCrouch = true;
 }
 
 void ATPSPlayer::BeginPlay()
@@ -156,6 +158,8 @@ void ATPSPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent
 
 		input->BindAction(IA_Run, ETriggerEvent::Started, this, &ATPSPlayer::OnActionRunStart);
 		input->BindAction(IA_Run, ETriggerEvent::Completed, this, &ATPSPlayer::OnActionRunEnd);
+
+		input->BindAction(IA_Crouch, ETriggerEvent::Started, this, &ATPSPlayer::OnActionCrouch);
 	}
 }
 
@@ -175,11 +179,25 @@ void ATPSPlayer::OnActionLook(const FInputActionValue& value)
 
 void ATPSPlayer::OnActionJump(const FInputActionValue& value)
 {
+	// 쪼그려 걷기할 때는 점프를 할 수 없게 하고싶다.
+	if (MoveState == EMoveState::Crouching)
+		return;
+	
 	Jump();
 }
 
 void ATPSPlayer::OnActionFire(const FInputActionValue& value)
 {
+	// 화면을 흔들고싶다.
+	check(FireCameraShake);
+	if (auto camMgr = GetWorld()->GetFirstPlayerController()->PlayerCameraManager)
+	{
+		camMgr->StartCameraShake(FireCameraShake);
+		
+		//auto* CameraShakeInst = camMgr->StartCameraShake(FireCameraShake);
+		// camMgr->StopCameraShake(CameraShakeInst);
+	}
+	
 	// 총쏘기 애니메이션을 재생하고싶다.
 	if (auto* anim = Cast<UTPSPlayerAnim>(GetMesh()->GetAnimInstance()))
 	{
@@ -305,13 +323,36 @@ void ATPSPlayer::OnActionZoomOut(const FInputActionValue& value)
 
 void ATPSPlayer::OnActionRunStart(const FInputActionValue& value)
 {
+	// 달리기는 걷고 있을때만 할 수 있다.
+	if (MoveState != EMoveState::Walking)
+		return;
+	
 	GetCharacterMovement()->MaxWalkSpeed = 1000.f;
 	MoveState = EMoveState::Running;
 }
 
 void ATPSPlayer::OnActionRunEnd(const FInputActionValue& value)
 {
+	// 달리기 취소는 달리고 있을때만 할 수 있다.
+	if (MoveState != EMoveState::Running)
+		return;
+
 	GetCharacterMovement()->MaxWalkSpeed = 600.f;
 	MoveState = EMoveState::Walking;
 }
 
+void ATPSPlayer::OnActionCrouch(const FInputActionValue& value)
+{
+	if (bIsCrouched)
+	{
+		UnCrouch();
+		// 걷기 상태로 바꾸고싶다.
+		GetCharacterMovement()->MaxWalkSpeed = 600.f;
+		MoveState = EMoveState::Walking;
+	}
+	else
+	{
+		Crouch(true);
+		MoveState = EMoveState::Crouching;
+	}
+}
