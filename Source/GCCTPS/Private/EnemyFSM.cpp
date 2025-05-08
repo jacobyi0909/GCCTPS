@@ -4,6 +4,7 @@
 #include "EnemyFSM.h"
 
 #include "Enemy.h"
+#include "EnemyAnim.h"
 #include "TPSPlayer.h"
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -27,6 +28,8 @@ void UEnemyFSM::BeginPlay()
 	Me = Cast<AEnemy>(GetOwner());
 
 	Me->GetCharacterMovement()->bOrientRotationToMovement = true;
+
+	EnemyAnim = Cast<UEnemyAnim>(Me->GetMesh()->GetAnimInstance());
 }
 
 // Called every frame
@@ -53,8 +56,9 @@ void UEnemyFSM::TickComponent(float DeltaTime, ELevelTick TickType, FActorCompon
 		break;
 	}
 
-	FString log = UEnum::GetValueAsString(State);
-	//PRINT_LOG(TEXT("%s"), *log);
+	FString log = FString::Printf(TEXT("State : %s\nbAttack : %d"),
+		*UEnum::GetValueAsString(State), EnemyAnim->bAttack);
+
 	DrawDebugString(GetWorld(), Me->GetActorLocation(), log, nullptr, FColor::Yellow, 0, true, 1);
 }
 
@@ -85,6 +89,7 @@ void UEnemyFSM::TickMove()
 	{
 		// 공격상태로 전이하고싶다.
 		SetState(EEnemyState::Attack);
+		EnemyAnim->bAttack = true;
 	}
 }
 
@@ -100,7 +105,7 @@ void UEnemyFSM::TickAttack()
 		//	만약 상대가 공격 가능하다면
 		if (dir.Length() < AttackRange)
 		{
-			//		로그출력 PRINT_LOG(TEXT("Attack!!!"));
+			EnemyAnim->bAttack = true;
 			PRINT_LOG(TEXT("Attack!!!"));
 		}
 		//  그렇지 않다면
@@ -157,5 +162,6 @@ void UEnemyFSM::OnMyTakeDamage(int32 damage)
 void UEnemyFSM::SetState(EEnemyState next)
 {
 	State = next;
+	EnemyAnim->State = next;
 	CurrentTime = 0;
 }

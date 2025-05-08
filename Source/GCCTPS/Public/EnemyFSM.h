@@ -41,13 +41,16 @@ public:
 	UPROPERTY()
 	class AEnemy* Me;
 
+	UPROPERTY()
+	class UEnemyAnim* EnemyAnim;
+
 	// 공격가능거리
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	float AttackRange = 200.f;
 
 	// 공격대기시간
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	float AttackDelayTime = 1.f;
+	float AttackDelayTime = 1.5f;
 
 	float CurrentTime;
 	
