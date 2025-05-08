@@ -111,7 +111,7 @@ void UEnemyFSM::TickAttack()
 		//  그렇지 않다면
 		else
 		{
-			//		이동상태로 전이하고싶다.
+			// 이동상태로 전이하고싶다.
 			SetState(EEnemyState::Move);
 		}
 	}
@@ -119,16 +119,20 @@ void UEnemyFSM::TickAttack()
 
 void UEnemyFSM::TickDamage()
 {
-	// 1초동안 멈췄다가 이동상태로 전이하고싶다.
-	CurrentTime += GetWorld()->GetDeltaSeconds();
-	if (CurrentTime > 1)
-	{
-		SetState(EEnemyState::Move);
-	}
+	// // 1초동안 멈췄다가 이동상태로 전이하고싶다.
+	// CurrentTime += GetWorld()->GetDeltaSeconds();
+	// if (CurrentTime > 1)
+	// {
+	// 	SetState(EEnemyState::Move);
+	// }
 }
 
 void UEnemyFSM::TickDie()
 {
+	// 만약 죽음 애니메이션이 끝나지 않았으면 함수 종료
+	if (false == EnemyAnim->bDie)
+		return;
+	
 	// 1초동안 아래로 이동하고싶다.  
 	CurrentTime += GetWorld()->GetDeltaSeconds();
 	FVector dir(0,0,-1);
@@ -150,12 +154,14 @@ void UEnemyFSM::OnMyTakeDamage(int32 damage)
 	if (CurHp > 0)
 	{
 		SetState(EEnemyState::Damage);
+		EnemyAnim->PlayDamageAnimation();
 	}
 	// 그렇지 않다면 죽음상태로 전이하고싶다.
 	else
 	{
 		SetState(EEnemyState::Die);
 		Me->GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		EnemyAnim->PlayDieAnimation();
 	}
 }
 
