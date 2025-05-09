@@ -9,6 +9,9 @@
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GCCTPS/GCCTPS.h"
+#include "AIController.h"
+#include "NavigationSystem.h"
+#include "Navigation/PathFollowingComponent.h"
 
 // Sets default values for this component's properties
 UEnemyFSM::UEnemyFSM()
@@ -30,6 +33,11 @@ void UEnemyFSM::BeginPlay()
 	Me->GetCharacterMovement()->bOrientRotationToMovement = true;
 
 	EnemyAnim = Cast<UEnemyAnim>(Me->GetMesh()->GetAnimInstance());
+
+	// AI컨트롤러를 기억하고싶다.
+	AI = Cast<AAIController>(Me->Controller);
+
+	UpdatePatrolLocation(Me->GetActorLocation(), 1000.f, PatrolLocation);
 }
 
 // Called every frame
@@ -80,7 +88,43 @@ void UEnemyFSM::TickMove()
 	// 주인공을 향해 이동하고싶다.
 	FVector destination = Player->GetActorLocation();
 	FVector dir = destination - Me->GetActorLocation();
-	Me->AddMovementInput(dir.GetSafeNormal2D());
+
+
+	// AI를 이용해서 길찾기를 하고싶다.
+	//Me->AddMovementInput(dir.GetSafeNormal2D());
+
+	// 도착지의 위치가 Player위치라서 겹치게 된다.
+
+	// 플레이어가 길위에 있는가?
+	UNavigationSystemV1* ns = UNavigationSystemV1::GetNavigationSystem(GetWorld());
+
+	FPathFindingQuery query;
+	FAIMoveRequest req;
+	req.SetAcceptanceRadius(100.f);
+	req.SetGoalLocation(destination);
+	
+	AI->BuildPathfindingQuery(req, query);
+
+	FPathFindingResult findPathResult = ns->FindPathSync(query);
+	// 플레이어가 길위에 있는가?
+	if (findPathResult.IsSuccessful())
+	{
+		//  - 플레이어의 위치를 향해 이동하고싶다.
+		AI->MoveToLocation(destination, 100.f);
+	}
+	// 그렇지 않다면(길위가 아니라면)
+	else
+	{
+		//  - 랜덤한 위치로 이동하고싶다.
+		EPathFollowingRequestResult::Type r = AI->MoveToLocation(PatrolLocation, 100.f);
+		//   - 만약 랜덤한 위치에 도착했다면
+		if (r == EPathFollowingRequestResult::Type::AlreadyAtGoal ||
+			r == EPathFollowingRequestResult::Type::Failed)
+		{
+			//    => 랜덤한 위치를 재설정 하고싶다.
+			UpdatePatrolLocation(Me->GetActorLocation(), 1000.f, PatrolLocation);
+		}
+	}
 
 	// 만약 공격 가능한 거리라면
 	//float dist = FVector::Dist(Player->GetActorLocation(), Me->GetActorLocation());
@@ -170,4 +214,21 @@ void UEnemyFSM::SetState(EEnemyState next)
 	State = next;
 	EnemyAnim->State = next;
 	CurrentTime = 0;
+	if (next != EEnemyState::Move)
+	{
+		AI->StopMovement();
+	}
+}
+
+
+bool UEnemyFSM::UpdatePatrolLocation(FVector origin, float radius, FVector& outLocation)
+{
+	auto* ns = UNavigationSystemV1::GetNavigationSystem(GetWorld());
+	FNavLocation loc;
+	if (ns->GetRandomReachablePointInRadius(origin, radius,loc))
+	{
+		outLocation = loc.Location;
+		return true;
+	}
+	return false;
 }

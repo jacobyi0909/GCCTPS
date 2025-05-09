@@ -44,6 +44,9 @@ public:
 	UPROPERTY()
 	class UEnemyAnim* EnemyAnim;
 
+	UPROPERTY()
+	class AAIController* AI;
+
 	// 공격가능거리
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	float AttackRange = 200.f;
@@ -72,4 +75,13 @@ public:
 	void SetState(EEnemyState next);
 
 	float DieDownSpeed = 200.f;
+
+
+	// 순찰을 위한 랜덤위치를 기억하고싶다.
+	FVector PatrolLocation;
+
+	// 랜덤위치를 정하는 기능을 만들고싶다.
+	bool UpdatePatrolLocation(FVector origin, float radius, FVector& outLocation);
+	
 };
+
