@@ -28,4 +28,13 @@ public:
 
 	UPROPERTY(EditAnywhere)
 	class UEnemyFSM* EnemyFSM;
+
+	UPROPERTY(EditAnywhere)
+	class UNavigationInvokerComponent* NavInvokerComp;
+
+	UPROPERTY(EditAnywhere)
+	class UWidgetComponent* HpWidgetComp;
+
+	UPROPERTY(EditAnywhere)
+	class UEnemyHPWidget* HpWidget;
 };

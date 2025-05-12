@@ -4,6 +4,9 @@
 #include "Enemy.h"
 
 #include "EnemyFSM.h"
+#include "EnemyHPWidget.h"
+#include "NavigationInvokerComponent.h"
+#include "Components/WidgetComponent.h"
 
 // Sets default values
 AEnemy::AEnemy()
@@ -21,6 +24,22 @@ AEnemy::AEnemy()
 	}
 	
 	EnemyFSM = CreateDefaultSubobject<UEnemyFSM>(TEXT("EnemyFSM"));
+
+
+	NavInvokerComp = CreateDefaultSubobject<UNavigationInvokerComponent>(TEXT("NavInvokerComp"));
+	NavInvokerComp->SetGenerationRadii(1000.f, 2000.f);
+	
+	HpWidgetComp = CreateDefaultSubobject<UWidgetComponent>(TEXT("HpWidgetComp"));
+	HpWidgetComp->SetupAttachment(RootComponent);
+	HpWidgetComp->SetRelativeLocation(FVector(0, 0, 150.f));
+
+	ConstructorHelpers::FClassFinder<UUserWidget> tempHpBar(TEXT("/Script/UMGEditor.WidgetBlueprint'/Game/TPS/UI/WBP_EnemyHP.WBP_EnemyHP_C'"));
+	if (tempHpBar.Succeeded())
+	{
+		HpWidgetComp->SetWidgetClass(tempHpBar.Class);
+		HpWidgetComp->SetDrawSize(FVector2d(100.0, 20.0));
+	}
+		
 }
 
 // Called when the game starts or when spawned
