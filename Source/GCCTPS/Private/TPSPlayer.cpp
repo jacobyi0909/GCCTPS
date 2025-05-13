@@ -14,6 +14,7 @@
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "TPSPlayerAnim.h"
+#include "TPSPlayerHPWidget.h"
 #include "Blueprint/UserWidget.h"
 #include "Kismet/GameplayStatics.h"
 
@@ -79,6 +80,13 @@ ATPSPlayer::ATPSPlayer()
 	}
 
 	//GetCharacterMovement()->GetNavAgentPropertiesRef().bCanCrouch = true;
+
+	ConstructorHelpers::FClassFinder<UUserWidget> tempHpWidget(
+		TEXT("/Script/UMGEditor.WidgetBlueprint'/Game/TPS/UI/WBP_PlayerHP.WBP_PlayerHP_C'"));
+	if (tempHpWidget.Succeeded())
+	{
+		HPWidgetFactory = tempHpWidget.Class;
+	}
 }
 
 void ATPSPlayer::BeginPlay()
@@ -100,6 +108,11 @@ void ATPSPlayer::BeginPlay()
 
 	bChoosGun = true;
 	OnActionChooseSniper(FInputActionValue());
+
+	HpWidget = CreateWidget<UTPSPlayerHPWidget>(GetWorld(), HPWidgetFactory);
+	HpWidget->AddToViewport();
+
+	HP = MaxHp;
 }
 
 void ATPSPlayer::NotifyControllerChanged()
@@ -182,7 +195,7 @@ void ATPSPlayer::OnActionJump(const FInputActionValue& value)
 	// 쪼그려 걷기할 때는 점프를 할 수 없게 하고싶다.
 	if (MoveState == EMoveState::Crouching)
 		return;
-	
+
 	Jump();
 }
 
@@ -193,11 +206,11 @@ void ATPSPlayer::OnActionFire(const FInputActionValue& value)
 	if (auto camMgr = GetWorld()->GetFirstPlayerController()->PlayerCameraManager)
 	{
 		camMgr->StartCameraShake(FireCameraShake);
-		
+
 		//auto* CameraShakeInst = camMgr->StartCameraShake(FireCameraShake);
 		// camMgr->StopCameraShake(CameraShakeInst);
 	}
-	
+
 	// 총쏘기 애니메이션을 재생하고싶다.
 	if (auto* anim = Cast<UTPSPlayerAnim>(GetMesh()->GetAnimInstance()))
 	{
@@ -210,7 +223,7 @@ void ATPSPlayer::OnActionFire(const FInputActionValue& value)
 	{
 		UGameplayStatics::PlaySound2D(GetWorld(), FireSound);
 	}
-	
+
 	// 총쏘기
 	if (bChoosGun)
 	{
@@ -239,16 +252,15 @@ void ATPSPlayer::OnActionFire(const FInputActionValue& value)
 		{
 			check(BulletImpactVFX);
 			UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), BulletImpactVFX, OutHit.ImpactPoint);
-			
+
 			// 만약 부딪힌 물체가 적이라면
 			if (AEnemy* enemy = Cast<AEnemy>(OutHit.GetActor()))
 			{
 				// 적의 FSM의 OnMyTakeDamage를 호출하고싶다.
 				enemy->EnemyFSM->OnMyTakeDamage(1);
 			}
-			
-			
-			
+
+
 			// 만약 부딪힌 물체가 물리가 켜져있다면
 			auto* hitComp = OutHit.GetComponent();
 			if (hitComp->IsSimulatingPhysics())
@@ -326,7 +338,7 @@ void ATPSPlayer::OnActionRunStart(const FInputActionValue& value)
 	// 달리기는 걷고 있을때만 할 수 있다.
 	if (MoveState != EMoveState::Walking)
 		return;
-	
+
 	GetCharacterMovement()->MaxWalkSpeed = 1000.f;
 	MoveState = EMoveState::Running;
 }
@@ -354,5 +366,35 @@ void ATPSPlayer::OnActionCrouch(const FInputActionValue& value)
 	{
 		Crouch(true);
 		MoveState = EMoveState::Crouching;
+	}
+}
+
+void ATPSPlayer::SetHP(float newHP)
+{
+	CurHp = newHP;
+	HpWidget->UpdateHP(CurHp, MaxHp);
+}
+
+float ATPSPlayer::GetHP() const
+{
+	return CurHp;
+}
+
+void ATPSPlayer::DoDamageFromEnemy(int32 damage)
+{
+	// 만약 체력이 0이하라면 바로 종료
+	if (HP <= 0)
+		return;
+	
+	HP--;
+	if (HP <= 0)
+	{
+		FTimerHandle handle;
+		GetWorldTimerManager().SetTimer(handle, [&]()
+		{
+			UGameplayStatics::SetGamePaused(GetWorld(), true);
+
+			// 할일 : 게임오버 화면을 출력하고싶다.
+		}, 0.2f, false);
 	}
 }

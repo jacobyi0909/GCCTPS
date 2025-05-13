@@ -69,8 +69,16 @@ public:
 	// - 공격받은 기능
 	void OnMyTakeDamage(int32 damage);
 
+	
 	float CurHp = 2.f;
 	float MaxHp = 2.f;
+
+	__declspec(property(get = GetHP, put = SetHP))
+	float HP;
+
+	void SetHP(float newHP);
+	
+	 float GetHP() const;
 
 	void SetState(EEnemyState next);
 
@@ -82,6 +90,16 @@ public:
 
 	// 랜덤위치를 정하는 기능을 만들고싶다.
 	bool UpdatePatrolLocation(FVector origin, float radius, FVector& outLocation);
-	
+
+	UPROPERTY()
+	class UEnemyHPWidget* HpWidget;
+
+
+	void InitHp();
+
+	void DoHit();
+
+	float GetFovAngle(FVector forward, FVector targetDir);
+
 };
 

@@ -148,7 +148,27 @@ public:
 	TSubclassOf<class UCameraShakeBase> FireCameraShake;
 
 	EMoveState MoveState = EMoveState::Walking;
+
+	UPROPERTY(EditAnywhere)
+	TSubclassOf<class UTPSPlayerHPWidget> HPWidgetFactory;
+
+	UPROPERTY()
+	class UTPSPlayerHPWidget* HpWidget;
+
+	float CurHp = 2.f;
+	float MaxHp = 2.f;
+
+	__declspec(property(get = GetHP, put = SetHP))
+	float HP;
+
+	void SetHP(float newHP);
+	
+	float GetHP() const;
+
+	void DoDamageFromEnemy(int32 damage);
+
 };
+
 
 
 

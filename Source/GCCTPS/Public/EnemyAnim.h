@@ -49,5 +49,8 @@ public:
 	UFUNCTION()
 	void AnimNotify_DieEnd();
 
+	UFUNCTION()
+	void AnimNotify_Hit();
+
 	
 };

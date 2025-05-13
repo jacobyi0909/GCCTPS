@@ -34,7 +34,4 @@ public:
 
 	UPROPERTY(EditAnywhere)
 	class UWidgetComponent* HpWidgetComp;
-
-	UPROPERTY(EditAnywhere)
-	class UEnemyHPWidget* HpWidget;
 };

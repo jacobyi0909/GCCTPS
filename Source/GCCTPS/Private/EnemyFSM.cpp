@@ -10,7 +10,9 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GCCTPS/GCCTPS.h"
 #include "AIController.h"
+#include "EnemyHPWidget.h"
 #include "NavigationSystem.h"
+#include "Components/WidgetComponent.h"
 #include "Navigation/PathFollowingComponent.h"
 
 // Sets default values for this component's properties
@@ -38,6 +40,7 @@ void UEnemyFSM::BeginPlay()
 	AI = Cast<AAIController>(Me->Controller);
 
 	UpdatePatrolLocation(Me->GetActorLocation(), 1000.f, PatrolLocation);
+
 }
 
 // Called every frame
@@ -150,7 +153,6 @@ void UEnemyFSM::TickAttack()
 		if (dir.Length() < AttackRange)
 		{
 			EnemyAnim->bAttack = true;
-			PRINT_LOG(TEXT("Attack!!!"));
 		}
 		//  그렇지 않다면
 		else
@@ -193,9 +195,9 @@ void UEnemyFSM::OnMyTakeDamage(int32 damage)
 {
 	PRINT_LOG(TEXT("OnMyTakeDamage"));
 	// 체력을 damage만큼 감소시키고싶다.
-	CurHp = FMath::Max(0, CurHp - damage);
+	HP = FMath::Max(0, HP - damage);
 	// 만약 체력이 0보다 크다면 Damage상태로 전이하고
-	if (CurHp > 0)
+	if (HP > 0)
 	{
 		SetState(EEnemyState::Damage);
 		EnemyAnim->PlayDamageAnimation();
@@ -207,6 +209,17 @@ void UEnemyFSM::OnMyTakeDamage(int32 damage)
 		Me->GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		EnemyAnim->PlayDieAnimation();
 	}
+}
+
+void UEnemyFSM::SetHP(float newHP)
+{
+	CurHp = newHP;
+	HpWidget->UpdateHP(CurHp, MaxHp);
+}
+
+float UEnemyFSM::GetHP() const
+{
+	return CurHp;
 }
 
 void UEnemyFSM::SetState(EEnemyState next)
@@ -232,3 +245,36 @@ bool UEnemyFSM::UpdatePatrolLocation(FVector origin, float radius, FVector& outL
 	}
 	return false;
 }
+
+void UEnemyFSM::InitHp()
+{
+	// 오너의 HpWidget를 기억하고싶다.
+	HpWidget = Cast<UEnemyHPWidget>(Me->HpWidgetComp->GetWidget());
+
+	// 태어날 때 현재 체력을 최대 체력으로 초기화하고싶다.
+	HP = MaxHp;
+}
+
+void UEnemyFSM::DoHit()
+{
+	// 만약 상대가 공격 가능 거리이고 나와 상대와의 각도가 30도 이하라면
+	FVector dir = Player->GetActorLocation() - Me->GetActorLocation();
+	float dist = dir.Length();
+	
+	if (dist < AttackRange && GetFovAngle(Me->GetActorForwardVector(), dir) <= 30)
+	{
+		// 공격하고싶다.
+		UE_LOG(LogTemp, Warning, TEXT("DoHit"));
+		Player->DoDamageFromEnemy(1);
+	}
+}
+
+float UEnemyFSM::GetFovAngle(FVector forward, FVector targetDir)
+{
+	float dot = FVector::DotProduct(forward.GetSafeNormal2D(), targetDir.GetSafeNormal2D());
+
+	float degree = FMath::RadiansToDegrees(FMath::Acos(dot));
+
+	return degree;
+}
+

@@ -52,3 +52,11 @@ void UEnemyAnim::AnimNotify_DieEnd()
 {
 	bDie = true;
 }
+
+void UEnemyAnim::AnimNotify_Hit()
+{
+	if (Me && Montage)
+	{
+		Me->EnemyFSM->DoHit();
+	}
+}
