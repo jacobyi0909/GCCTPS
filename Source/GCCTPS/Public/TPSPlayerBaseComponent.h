@@ -20,11 +20,12 @@ protected:
 	// Called when the game starts
 	virtual void BeginPlay() override;
 
-public:	
+public:
+	virtual void InitializeComponent() override;
 	// Called every frame
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
-	virtual void SetupPlayerInputComp(class ATPSPlayer* player, class UEnhancedInputComponent* InputComp) { }
+	virtual void SetupPlayerInputComp(class ATPSPlayer* player, class UEnhancedInputComponent* InputComp);
 	
 	UPROPERTY()
 	class ATPSPlayer* Me;

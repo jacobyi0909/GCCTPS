@@ -8,7 +8,8 @@
 #include "GCCTPS/GCCTPS.h"
 #include "TPSPlayer.generated.h"
 
-
+DECLARE_MULTICAST_DELEGATE_TwoParams(FSetupInputDelegate,
+	class ATPSPlayer* , class UEnhancedInputComponent*);
 
 UCLASS()
 class GCCTPS_API ATPSPlayer : public ACharacter
@@ -34,9 +35,9 @@ public:
 
 	virtual void NotifyControllerChanged() override;
 
-	// 1. Mesh의 내용을 채우고싶다.
-	// 2. SpringArmComp를 만들어서 Root에 붙이고 배치하고싶다.
-	// 3. CameraComp를 만들어서 SpringArmComp에 붙이고싶다.
+	// 델리게이트를 이용해서 컴포넌트들의 입력처리를 간소화 하고싶다.
+
+	FSetupInputDelegate SetupInputDelegate;
 
 	UPROPERTY(EditAnywhere)
 	class USpringArmComponent* SpringArmComp;

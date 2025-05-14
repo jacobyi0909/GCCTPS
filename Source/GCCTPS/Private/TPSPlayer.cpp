@@ -148,18 +148,9 @@ void ATPSPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent
 
 	if (auto* input = Cast<UEnhancedInputComponent>(PlayerInputComponent))
 	{
-		MoveComp->SetupPlayerInputComp(this, input);
-		FireComp->SetupPlayerInputComp(this, input);
-
-
-
-
+		SetupInputDelegate.Broadcast(this, input);
 	}
 }
-
-
-
-
 
 void ATPSPlayer::SetHP(float newHP)
 {
