@@ -24,8 +24,13 @@ AEnemy::AEnemy()
 		GetMesh()->SetSkeletalMesh(tempMesh.Object);
 		GetMesh()->SetRelativeLocationAndRotation(FVector(0, 0, -90.f), FRotator(0, -90.f, 0));
 	}
-	
 
+	ConstructorHelpers::FClassFinder<UAnimInstance> tempAnim(TEXT("/Script/Engine.AnimBlueprint'/Game/TPS/Blueprints/Anim/ABP_Enemy.ABP_Enemy_C'"));
+	if (tempAnim.Succeeded())
+	{
+		GetMesh()->SetAnimInstanceClass(tempAnim.Class);
+	}
+	
 	EnemyFSM = CreateDefaultSubobject<UEnemyFSM>(TEXT("EnemyFSM"));
 
 	NavInvokerComp = CreateDefaultSubobject<UNavigationInvokerComponent>(TEXT("NavInvokerComp"));
@@ -41,6 +46,8 @@ AEnemy::AEnemy()
 		HpWidgetComp->SetWidgetClass(tempHpBar.Class);
 		HpWidgetComp->SetDrawSize(FVector2d(100.0, 20.0));
 	}
+
+	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
 		
 }
 

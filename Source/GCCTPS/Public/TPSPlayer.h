@@ -25,8 +25,6 @@ protected:
 
 
 public:
-
-	
 	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
@@ -46,9 +44,12 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	class UCameraComponent* CameraComp;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	FVector Direction;
+	UPROPERTY(EditAnywhere)
+	class UTPSPlayerFireComponent* FireComp;
 
+	UPROPERTY(EditAnywhere)
+	class UTPSPlayerMoveComponent* MoveComp;
+	
 	UPROPERTY(EditAnywhere, Category = Input)
 	class UInputMappingContext* IMC_TPSPlayer;
 
@@ -79,76 +80,14 @@ public:
 	UPROPERTY(EditAnywhere, Category = Input)
 	class UInputAction* IA_Crouch;
 
-	void OnActionMove(const FInputActionValue& value);
-	void OnActionLook(const FInputActionValue& value);
-	void OnActionJump(const FInputActionValue& value);
-	void OnActionFire(const FInputActionValue& value);
-	void OnActionChooseGun(const FInputActionValue& value);
-	void OnActionChooseSniper(const FInputActionValue& value);
-
-	void OnActionZoomIn(const FInputActionValue& value);
-	void OnActionZoomOut(const FInputActionValue& value);
-
-	void OnActionRunStart(const FInputActionValue& value);
-	void OnActionRunEnd(const FInputActionValue& value);
-
-	void OnActionCrouch(const FInputActionValue& value);
-	
-	// 총을 쏘고싶다.
-	// - 총구위치
 	UPROPERTY(EditAnywhere)
 	class USkeletalMeshComponent* GunComp;
-	// - 총알공장
-	UPROPERTY(EditAnywhere)
-	TSubclassOf<class ABullet> BulletFactory;
 
 	UPROPERTY(EditAnywhere)
 	class UStaticMeshComponent* SniperComp;
 
-	bool bChoosGun = false;
-
-	// 태어날 때 CrosshairUI, SniperUI를 생성하고 Viewport에 붙이고 보이지 않게 하고싶다.
-	// 1번을 누르면 UI가 다 안보여야한다.
-	// 2번을 누르면 Crosshair만 보여야한다
-	//   이 상태에서 ZoomIn 하면 Sniper가 보여야 한다.
-	//   ZoomOut을 하면 Crosshair만 보여야한다
-	UPROPERTY(EditAnywhere)
-	TSubclassOf<class UUserWidget> CrosshairUIFactory;
-
-	UPROPERTY()
-	UUserWidget* CrosshairUi;
-
-	UPROPERTY(EditAnywhere)
-	TSubclassOf<class UUserWidget> SniperUIFactory;
-
-	UPROPERTY()
-	UUserWidget* SniperUi;
-
-	float TargetFOV = 90.f;
-
-	float ZoomSpeed;
-
-	// 스나이퍼총으로 맞은 위치에 BulletImpact VFX를 표현하고싶다.
-	UPROPERTY(EditAnywhere)
-	class UParticleSystem* BulletImpactVFX;
-
-	// FTimerHandle handle;
-
-	// 총쏘기 애니메이션을 재생하고싶다.
-	UPROPERTY(EditAnywhere)
-	class UAnimMontage* FireAnimMontage;
-
-	// 소리재생
-	UPROPERTY(EditAnywhere)
-	class USoundWave* FireSound;
-
 	
-	// 화면 흔들기
-	UPROPERTY(EditAnywhere)
-	TSubclassOf<class UCameraShakeBase> FireCameraShake;
-
-	EMoveState MoveState = EMoveState::Walking;
-
+	// 체력
 	UPROPERTY(EditAnywhere)
 	TSubclassOf<class UTPSPlayerHPWidget> HPWidgetFactory;
 

@@ -3,6 +3,7 @@
 
 #include "TPSPlayerAnim.h"
 #include "TPSPlayer.h"
+#include "TPSPlayerMoveComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 
 void UTPSPlayerAnim::NativeInitializeAnimation()
@@ -33,5 +34,5 @@ void UTPSPlayerAnim::NativeUpdateAnimation(float DeltaSeconds)
 	PitchAngle = Player->GetBaseAimRotation().Pitch;
 
 	// 플레이어의 이동상태를 동기화 하고싶다.
-	MoveState = Player->MoveState;
+	MoveState = Player->MoveComp->MoveState;
 }
