@@ -7,6 +7,7 @@
 #include "Enemy.h"
 #include "EnemyFSM.h"
 #include "EnhancedInputComponent.h"
+#include "MainWidget.h"
 #include "TPSPlayer.h"
 #include "TPSPlayerAnim.h"
 #include "Blueprint/UserWidget.h"
@@ -158,6 +159,10 @@ void UTPSPlayerFireComponent::OnActionChooseGun(const FInputActionValue& value)
 
 	// ZoomOut을 하고 싶다.
 	OnActionZoomOut(FInputActionValue());
+	if (Me->MainWidget)
+	{
+		Me->MainWidget->ChooseGunImage(false);
+	}
 }
 
 void UTPSPlayerFireComponent::OnActionChooseSniper(const FInputActionValue& value)
@@ -173,6 +178,11 @@ void UTPSPlayerFireComponent::OnActionChooseSniper(const FInputActionValue& valu
 
 	CrosshairUi->SetVisibility(ESlateVisibility::Visible);
 	SniperUi->SetVisibility(ESlateVisibility::Hidden);
+
+	if (Me->MainWidget)
+	{
+		Me->MainWidget->ChooseGunImage(true);
+	}
 }
 
 // 타이머를 이용해서 FOV가 변경될때 부드럽게 처리되도록 하고싶다.

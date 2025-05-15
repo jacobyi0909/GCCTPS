@@ -3,17 +3,14 @@
 
 #include "TPSPlayer.h"
 
-#include "Bullet.h"
 #include "Enemy.h"
-#include "EnemyFSM.h"
-#include "../GCCTPS.h"
 #include "Camera/CameraComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "InputMappingContext.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
-#include "TPSPlayerAnim.h"
+#include "MainWidget.h"
 #include "TPSPlayerFireComponent.h"
 #include "TPSPlayerHPWidget.h"
 #include "TPSPlayerMoveComponent.h"
@@ -96,21 +93,24 @@ ATPSPlayer::ATPSPlayer()
 
 void ATPSPlayer::BeginPlay()
 {
+	MainWidget = CreateWidget<UMainWidget>(GetWorld(), MainWidgetFactory);
+	MainWidget->AddToViewport(1);
+
 	Super::BeginPlay();
 
 	// 최대 점프 카운트를 2로 하고싶다.
 	this->JumpMaxCount = 2;
 
-	//PRINT_LOG(TEXT("%s %d"), TEXT("Hello World!"), 20);
-
-	// 태어날 때 CrosshairUI, SniperUI를 생성하고 Viewport에 붙이고 보이지 않게 하고싶다.
-
-
 
 	HpWidget = CreateWidget<UTPSPlayerHPWidget>(GetWorld(), HPWidgetFactory);
-	HpWidget->AddToViewport();
+	HpWidget->AddToViewport(10);
 
 	HP = MaxHp;
+
+	// 시작할 때 입력모드를 게임으로 하고 마우스를 보이지 않게 하고싶다.
+	auto* pc = GetWorld()->GetFirstPlayerController();
+	pc->SetInputMode(FInputModeGameOnly());
+	pc->SetShowMouseCursor(false);
 }
 
 void ATPSPlayer::NotifyControllerChanged()
@@ -134,11 +134,6 @@ void ATPSPlayer::NotifyControllerChanged()
 void ATPSPlayer::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-
-	// ControlRotation값으로 Transform을 만들고 그것을 기준으로 방향을 변경하고
-	// AddMovementInput 하고싶다.
-
-
 }
 
 // Called to bind functionality to input
@@ -176,6 +171,12 @@ void ATPSPlayer::DoDamageFromEnemy(int32 damage)
 		GetWorldTimerManager().SetTimer(handle, [&]()
 		{
 			UGameplayStatics::SetGamePaused(GetWorld(), true);
+			// 게임오버 UI를 보이게하고
+			MainWidget->SetActiveGameOver(true);
+			// 입력모드를 UI로하고 마우스를 보이게하고싶다.
+			auto* pc = GetWorld()->GetFirstPlayerController();
+			pc->SetInputMode(FInputModeUIOnly());
+			pc->SetShowMouseCursor(true);
 
 			// 할일 : 게임오버 화면을 출력하고싶다.
 		}, 0.2f, false);

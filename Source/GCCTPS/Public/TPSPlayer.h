@@ -107,6 +107,13 @@ public:
 
 	void DoDamageFromEnemy(int32 damage);
 
+
+	// 메인위젯을 생성해서 화면에 보이게 하고싶다.
+	UPROPERTY(EditAnywhere)
+	TSubclassOf<class UMainWidget> MainWidgetFactory;
+
+	UPROPERTY()
+	class UMainWidget* MainWidget;
 };
 
 
